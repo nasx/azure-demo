@@ -136,6 +136,8 @@
         - "{{ app_vm_ips.results }}"
 
 - name: Configure VMs
+  vars_files:
+    - vault.yml
   hosts: dynamic_inventory
   become: yes
   tasks:
