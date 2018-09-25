@@ -1,9 +1,9 @@
 ---
-app_prefix: walltest1
+app_prefix: walltest2
 app_vm_names: "[ '{{ app_prefix }}-vm1', '{{ app_prefix }}-vm2' ]"
 app_source: "https://github.com/nasx/simple-application.git"
 azure_location: eastus
 azure_cidr_network: 10.254.252.0/22
 azure_app_subnet: 10.254.252.0/24
 azure_infra_rg: "umbrella-eastus"
-azure_infra_zone: "azure.umbrellalabs.net"
+azure_infra_zone: "azure.redhat-demo.com"

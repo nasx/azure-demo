@@ -1,5 +1,7 @@
 ---
 - name: Deploy Application Database
+  vars_files:
+    - vault.yml
   hosts: localhost
   tasks:
     - name: Create MySQL Server in Azure Database for MySQL Service
