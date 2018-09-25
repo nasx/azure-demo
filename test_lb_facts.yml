@@ -1,0 +1,11 @@
+---
+- name: Get Load Balancer Facts
+  hosts: localhost
+  tasks:
+    - name: Get Load Balancer Facts
+      azure_rm_loadbalancer_facts:
+        name: walltest1-load-balancer
+        resource_group: walltest1-resource-group
+      register: lb_facts
+
+    - debug: var=lb_facts

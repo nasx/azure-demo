@@ -1,0 +1,20 @@
+---
+object_type: instance
+version: 1.0
+object:
+  attributes:
+    display_name: 
+    name: ListVirtualNetworksFromResourceGroup
+    inherits: 
+    description: 
+  fields:
+  - client_id:
+      value:
+  - client_key:
+      value:
+  - tenant_id:
+      value:
+  - subscription_id:
+      value:
+  - method:
+      value: list_virtual_networks_from_resource_group

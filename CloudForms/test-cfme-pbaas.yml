@@ -1,0 +1,70 @@
+---
+- name: Test CloudForms PBaaS
+  hosts: localhost
+  tasks:
+    - name: Fail When !manageiq
+      fail:
+        msg: "No variable named manageiq!"
+      when: manageiq is not defined
+
+    - name: Debug manageiq Variable
+      debug:
+        var: manageiq
+      verbosity: 2
+
+    - name: Print some debug information
+      vars:
+        msg: |
+          Module Variables ("vars"):
+          --------------------------------
+          {{ vars | to_nice_json }}
+
+          Environment Variables ("environment"):
+          --------------------------------
+          {{ environment | to_nice_json }}
+
+      debug:
+        msg: "{{ msg.split('\n') }}"
+
+    - name: Debug test_var1 Variable
+      debug:
+        var: test_var1
+      verbosity: 2
+      when: test_var1 is defined
+
+    - name: Debug test_var2 Variable
+      debug:
+        var: test_var2
+      verbosity: 2
+      when: test_var2 is defined
+
+    - name: Test Message
+      debug:
+        msg: "Hello World!"
+
+    - set_fact:
+        today: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M') }}"
+
+    - name: Debug today Variable
+      debug:
+        var: today
+        verbosity: 2
+
+    - name: Update Service Name
+      uri:
+        body:
+          name: "PBaaS Test - {{ today }}"
+        body_format: json
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        method: PUT
+        status_code: 200
+        url: "https://{{ cfme_hostname }}/api/{{ manageiq.service }}"
+        validate_certs: False
+      register: uri_update_name
+
+    - name: Debug uri_update_name Variable
+      debug:
+        var: uri_update_name
+      verbosity: 2

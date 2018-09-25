@@ -1,0 +1,118 @@
+---
+- name: Create a Single Virtual Machine in Azure
+  hosts: localhost
+  tasks:
+    - set_fact:
+        today: "{{ lookup('pipe','date +%Y-%m-%d-%H-%M') }}"
+
+    - name: Debug today Variable
+      debug:
+        var: today
+        verbosity: 2
+
+    - name: Update Service Name
+      uri:
+        body:
+          name: "Azure - Provision VM - {{ today }}"
+        body_format: json
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        method: PUT
+        status_code: 200
+        url: "{{ manageiq.api_url }}/api/{{ manageiq.service }}"
+        validate_certs: False
+      register: uri_update_name
+
+    - name: Create Virtual Machine
+      azure_rm_virtualmachine:
+        admin_username: "{{ admin_user }}"
+        image:
+          publisher: RedHat
+          offer: RHEL
+          sku: 7-LVM
+          version: latest
+        managed_disk_type: Standard_LRS
+        name: "{{ host_name }}"
+        public_ip_allocation_method: Static
+        resource_group: "{{ resource_group }}"
+        ssh_password_enabled: False
+        ssh_public_keys:
+          - path: "/home/{{ admin_user }}/.ssh/authorized_keys"
+            key_data: "{{ public_key }}"
+        started: yes
+        state: present
+        virtual_network_name: "{{ virtual_network }}"
+        vm_size: "{{ vm_size }}"
+      register: vm
+
+    - name: Expidite Provider Refresh
+      uri:
+        url: "https://172.16.10.210/api/providers/79000000000004"
+        validate_certs: false
+        method: POST
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        status_code: 200
+        body:
+          action: refresh
+        body_format: json
+      register: uri_out
+
+    - name: Debug uri_out Variable
+      debug:
+        var: uri_out
+        verbosity: 2
+
+    # Why doesn't vm.ansible_facts.azure_vm.id work?
+
+    - set_fact:
+        uid_ems: "{{ ansible_env.AZURE_SUBSCRIPTION_ID }}\\{{ resource_group }}\\microsoft.compute/virtualmachines\\{{ host_name }}"
+    - set_fact:
+        ems_url: "{{ manageiq.api_url }}/api/vms?filter[]=uid_ems={{ uid_ems }}&expand=resources"
+
+    - name: Debug uid_ems Variable
+      debug:
+        var: uid_ems
+        verbosity: 2
+
+    - name: Debug ems_url Variable
+      debug:
+        var: ems_url
+        verbosity: 2
+
+    - name: Lookup VM in CloudForms via uid_ems
+      uri:
+        body:
+          action: refresh
+        body_format: json
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        method: GET
+        status_code: 200
+        url: "{{ ems_url }}"
+        validate_certs: False
+      register: uri_lookup_vm
+      until: uri_lookup_vm.json.subcount > 0
+      retries: 30
+      delay: 10
+
+    - debug:
+        var: uri_lookup_vm
+
+    - name: Add VM to Service
+      uri:
+        body:
+          action: add_resource
+          resources: "[ { 'href': '/api/{{ manageiq.service }}', 'resource': { 'href': '/api/vms/{{ uri_lookup_vm.json.resources[0].id }}' } } ]"
+        body_format: json
+        headers:
+          X-Auth-Token: "{{ manageiq.api_token }}"
+          Content-Type: "application/json"
+        method: POST
+        status_code: 200
+        url: "{{ manageiq.api_url }}/api/services"
+        validate_certs: False
+      register: uri_add_vm_to_service

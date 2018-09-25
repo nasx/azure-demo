@@ -1,0 +1,43 @@
+---
+- name: Create Application Infrastructure
+  hosts: localhost
+  tasks:
+    - name: Create Resource Group
+      azure_rm_resourcegroup:
+        location: "{{ azure_location }}"
+        name: "{{ app_prefix }}_resource_group"
+        state: present
+
+    - name: Create Virtual Network
+      azure_rm_virtualnetwork:
+        address_prefixes_cidr: "{{ azure_cidr_network }}"
+        location: "{{ azure_location }}"
+        name: "{{ app_prefix }}_virtual_network"
+        resource_group: "{{ app_prefix }}_resource_group"
+        state: present
+
+    - name: Create Subnet
+      azure_rm_subnet:
+        address_prefix_cidr: "{{ azure_app_subnet }}"
+        name: Default
+        resource_group: "{{ app_prefix }}_resource_group"
+        virtual_network_name: "{{ app_prefix }}_virtual_network"
+
+    - name: Create Security Group
+      azure_rm_securitygroup:
+        name: "{{ app_prefix }}_security_group"
+        resource_group: "{{ app_prefix }}_resource_group"
+        rules:
+          - name: SSH
+            protocol: Tcp
+            destination_port_range: 22
+            access: Allow
+            priority: 100
+            direction: Inbound
+          - name: HTTP
+            protocol: Tcp
+            destination_port_range: 443
+            access: Allow
+            priority: 101
+            direction: Inbound
+        state: present

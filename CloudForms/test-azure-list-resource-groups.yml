@@ -1,0 +1,12 @@
+---
+- name: Test Azure Connectivity - List All Resource Groups
+  hosts: localhost
+  tasks:
+    - name: Get Resource Groups
+      azure_rm_resourcegroup_facts:
+        # No Parameters Needed
+      register: azure_resourcegroup_facts
+
+    - name: Debug azure_resourcegroup_facts
+      debug:
+        var: azure_resourcegroup_facts
